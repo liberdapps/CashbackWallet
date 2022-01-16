@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DivWallet</title>
+    <link href="css/styles.css" rel="stylesheet" />
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+</head>
+
+<body id="dapp-page">
+    <div id="app">
+        <dapp-page>
+            <div  style="display:flex; align-items:center; justify-content: center; height:100vh">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only"></span>
+                </div>
+            </div>
+        </dapp-page>
+    </div>
+
+    <!-- Vue template -->
+    <script type="text/x-template" id="dapp-template">
+        <div>
+          <!-- Navigation-->
+          <nav class="navbar navbar-expand-lg navbar-light fixed-top shadow-sm" id="mainNav">
+              <div class="container px-5">
+                  <a class="navbar-brand fw-bold" href=".">DivWallet</a>
+              </div>
+          </nav>
+          <!-- Header-->
+          <header class="masthead">
+              <div class="container px-3">
+                  <div class="d-flex gx-5 align-items-center" style="flex-direction: column">
+                      <div class="col-xs-12">
+                          <div class="mb-0 text-center">
+                              <div class="d-flex align-items-center">
+                                  <div class="px-3">
+                                      <img class="img-fluid" src="assets/img/icon.png" width="120px" />
+                                  </div>
+                                  <div>
+                                      <h1 class="display-4 lh-1 mb-0">Welcome to a new way of digitally transacting your money</h1>
+                                      <p class="lead fw-normal text-muted mb-0">Would you like to earn some money while you pay your bills?</p>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </header>
+          <!-- Background -->
+          <aside class="text-center bg-gradient-primary-to-secondary">
+              <div class="container px-5">
+                  <div class="row gx-5 justify-content-center">
+                      <div class="col-sm-12">
+                          <div class="h2 fs-3 text-white mb-0">
+                              <p>If you're looking to transfer your bitcoins without paying those hefty transfer fees, DivWallet got you covered.</p>
+                              <p class="mb-0">Heck, we will even give you guaranteed Cashbacks!</p>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </aside>
+          <!-- Main content -->
+          <div class="main">
+              <div class="container-dapp container-sm" v-if="this.loadingError !== null">
+                  <div class="alert alert-danger mb-0" role="alert" style="word-break:break-word">
+                      Failure loading dApp: {{loadingError}}. If you're using a web browser, please make sure that your MetaMask wallet is connected to the <a href="https://developers.rsk.co/tutorials/ethereum-devs/remix-and-metamask-with-rsk-testnet#connect-metamask-to-rsk-testnet" target="_blank">RSK blockchain</a> and try again.
+                  </div>
+              </div>
+              <div class="container-dapp container-sm" v-if="this.loadingError === null">
+                  <nav>
+                      <div class="nav nav-tabs row" id="nav-tab" role="tablist">
+                          <button class="nav-link col-lg-6 col-md-12 active" id="nav-home-tab" data-bs-toggle="tab" data-bs-target="#nav-home" type="button" role="tab" aria-controls="nav-home" aria-selected="true"><span>Merchant</span></button>
+                          <button class="nav-link col-lg-6 col-md-12" id="nav-profile-tab" data-bs-toggle="tab" data-bs-target="#nav-profile" type="button" role="tab" aria-controls="nav-profile" aria-selected="false"><span>Customer</span></button>
+                      </div>
+                  </nav>
+                  <div class="tab-content mt-4 text-muted" id="nav-tabContent">
+                      <!-- Merchants -->
+                      <div class="tab-pane fade show active" id="nav-home" role="tabpanel" aria-labelledby="nav-home-tab">
+                          <div class="alert alert-info mb-0 text-center" role="alert" v-if="this.merchantInfo === null">
+                              You don't have a QR code yet. Please sign up to generate one.<br/>
+                          </div>
+                          <div class="card shadow rounded mt-4" v-else>
+                              <div class="card-body">
+                                  <h5 class="card-title text-primary text-center">Your QR code </h5>
+                                  <div class="text-center">
+                                    <img :src="newQRCode" alt="QRCode" />
+                                  </div>
+                              </div>
+                          </div>
+      
+                          <div class="card shadow rounded mt-4">
+                              <div class="card-body">
+                                  <div class="mb-3">
+                                      <label for="txtName" autofocus class="form-label">Business name:</label>
+                                      <input type="text" class="form-control" ref="txtName" :disabled="(!merchantEditMode && merchantInfo !== null) || processing" v-model="merchantInputName">
+                                  </div>
+                                  <div class="mb-3">
+                                      <label for="txtContact" class="form-label">Short description:</label>
+                                      <input type="text" class="form-control" :disabled="(!merchantEditMode && merchantInfo !== null) || processing" v-model="merchantInputDescription">
+                                  </div>
+                                  <div class="mb-3">
+                                      <label for="txtContact" class="form-label">Contact info:</label>
+                                      <input type="text" class="form-control" :disabled="(!merchantEditMode && merchantInfo !== null) || processing" v-model="merchantInputContact">
+                                  </div>
+                                  <div class="text-center">
+                                      <button type="button" class="btn btn-primary" @click="editMerchantInfo" v-if="!merchantEditMode && merchantInfo !== null">Edit details</button>
+                                      <button type="button" class="btn btn-danger" @click="cancelMerchantChanges" v-if="merchantEditMode && merchantInfo !== null" :disabled="this.processing">Cancel</button>
+                                      <button type="button" class="btn btn-success" @click="saveMerchantInfo" v-if="merchantEditMode || merchantInfo === null" :disabled="this.processing || !isFormValid">{{processing ? "Please, wait..." : "Save"}}</button>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+      
+                      <!-- Users -->
+                      <div class="tab-pane fade" id="nav-profile" role="tabpanel" aria-labelledby="nav-profile-tab">
+      
+                          <div class="card shadow rounded mt-4">
+                              <div class="card-body">
+                                  <h5 class="card-title text-primary text-center">Your Cashback</h5>
+                                  <div class="text-center mb-1">
+                                      <strong>Available: </strong><br/>
+                                      <em>{{formattedUserInfo.cashbackBalance}}</em>
+                                  </div>
+      
+                                  <div class="text-center mb-1">
+                                      <strong>Current level: </strong><br/>
+                                      <em>{{formattedUserInfo.cashbackLevel}}</em>
+                                  </div>
+      
+                                  <div class="text-center mb-1" v-if="formattedUserInfo.nextLevelRemaining !== null">
+                                      <strong>Next level: </strong><br/>
+                                      <div class="progress position-relative">
+                                          <div class="progress-bar" role="progressbar" style="background: lightblue" :style="{'width': formattedUserInfo.nextLevelProgress}"></div>
+                                          <small class="justify-content-center d-flex position-absolute w-100 text-black">{{formattedUserInfo.nextLevelRemaining}} left</small>
+                                      </div>
+                                  </div>
+      
+                                  <div class="text-center m-4">
+                                      <button type="button" class="btn btn-success" @click="withdrawCashback" :disabled="!hasCashback || processing">{{processing ? "Please, wait..." : "Withdraw cashback"}}</button>
+                                  </div>
+                              </div>
+                          </div>
+      
+                          <h3 class="mt-4 text-center">Merchants with cashback</h3>
+                          <div class="alert alert-info mb-0 text-center" role="alert" v-if="this.merchantList.length === 0">
+                              No merchants available yet.
+                          </div>
+      
+                          <div class="card shadow rounded mt-4" v-for="merchant in this.merchantList" :key="merchant.id">
+                              <div class="card-body text-center">
+                                  <h5 class="card-title text-primary text-center">{{merchant.name}}</h5>
+                                  <div class="card-text">
+                                      {{merchant.description}}<br/> {{merchant.contact}}
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      
+          <!-- Error modal -->
+          <div class="modal fade" id="errorModal" tabindex="-1" role="dialog" aria-labelledby="errorModalTitle" aria-hidden="true" style="z-index: 99999">
+            <div class="modal-dialog modal-dialog-scrollable" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title text-danger" id="errorModalTitle">Error</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="errorMsg">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success modal -->
+        <div class="modal fade" id="successModal" tabindex="-1" role="dialog" aria-labelledby="successModalTitle" aria-hidden="true" style="z-index: 99999">
+        <div class="modal-dialog modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-success" id="successModalTitle">Success</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Done!
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+      
+          <!-- Footer-->
+          <footer class="bg-black text-center py-5">
+              <div class="container px-5">
+                  <div class="text-white-50 small">
+                      <div class="mb-0">Some footer notes...</div>
+                  </div>
+              </div>
+          </footer>
+       </div>
+    </script>
+
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/web3.min.js"></script>
+    <script src="js/vue.min.js"></script>
+    <script src="js/qrious.min.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
