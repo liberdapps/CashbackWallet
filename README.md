@@ -1,2 +1,2 @@
-# MerchantWallet
-MerchantWallet
+# CashbackWallet
+CashbackWallet
